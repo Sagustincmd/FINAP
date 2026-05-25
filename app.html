@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinanzasApp</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    window.ENV_SUPABASE_URL = 'TU_SUPABASE_URL';
+    window.ENV_SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
+  </script>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="10" fill="#185FA5"/>
+        <path d="M12 28L20 12L28 28" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14.5 23H25.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      FinanzasApp
+    </div>
+
+    <button class="nav-item active" onclick="showPage('dashboard')">
+      <span class="icon">📊</span> Dashboard
+    </button>
+    <button class="nav-item" onclick="showPage('ingresos')">
+      <span class="icon">💰</span> Ingresos
+    </button>
+    <button class="nav-item" onclick="showPage('gastos')">
+      <span class="icon">🧾</span> Gastos
+    </button>
+    <button class="nav-item" onclick="showPage('fijos')">
+      <span class="icon">📅</span> Gastos fijos
+    </button>
+    <button class="nav-item" onclick="showPage('deudas')">
+      <span class="icon">💳</span> Deudas
+    </button>
+    <button class="nav-item" onclick="showPage('equilibrio')">
+      <span class="icon">⚖️</span> Equilibrio
+    </button>
+    <button class="nav-item" onclick="showPage('ahorro')">
+      <span class="icon">🐷</span> Ahorro
+    </button>
+    <button class="nav-item" onclick="showPage('alertas')">
+      <span class="icon">🔔</span> Alertas
+    </button>
+    <button class="nav-item" onclick="showPage('comparativas')">
+      <span class="icon">📈</span> Comparativas
+    </button>
+    <button class="nav-item" onclick="showPage('historial')">
+      <span class="icon">🕓</span> Historial
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="user-info" id="user-email">...</div>
+      <button class="btn" style="width:100%;font-size:12px" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ────────────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi"><div class="kpi-label">Disponible</div><div class="kpi-val" id="kpi-disponible">—</div></div>
+        <div class="kpi"><div class="kpi-label">Ingresos del mes</div><div class="kpi-val" id="kpi-ingresos">—</div></div>
+        <div class="kpi"><div class="kpi-label">Gastos del mes</div><div class="kpi-val" id="kpi-gastos">—</div></div>
+        <div class="kpi"><div class="kpi-label">Resultado</div><div class="kpi-val" id="kpi-resultado">—</div></div>
+        <div class="kpi"><div class="kpi-label">Deudas pendientes</div><div class="kpi-val" id="kpi-deudas">—</div></div>
+        <div class="kpi"><div class="kpi-label">Promedio diario</div><div class="kpi-val" id="kpi-promedio">—</div></div>
+      </div>
+
+      <div class="card">
+        <h3>⚡ Carga rápida de gasto</h3>
+        <div class="form-grid cols-3">
+          <div class="field">
+            <label>Monto</label>
+            <input type="number" id="q-monto" placeholder="$0" min="0" step="any">
+          </div>
+          <div class="field">
+            <label>Categoría</label>
+            <select id="q-cat">
+              <option>Comida</option><option>Transporte</option><option>Delivery</option>
+              <option>Salud</option><option>Servicios</option><option>Ocio</option>
+              <option>Gimnasio</option><option>Internet</option><option>Combustible</option>
+              <option>Apps</option><option>Educación</option><option>Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="q-tipo">
+              <option value="necesario">Necesario</option>
+              <option value="impulsivo">Impulsivo</option>
+              <option value="operativo">Operativo</option>
+              <option value="crecimiento">Crecimiento</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Descripción</label>
+            <input type="text" id="q-desc" placeholder="Ej: almuerzo trabajo">
+          </div>
+          <div class="field">
+            <label>Método de pago</label>
+            <select id="q-medio">
+              <option>Efectivo</option><option>Débito</option>
+              <option>Crédito</option><option>Transferencia</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="cargarGastoRapido()" style="width:100%;margin-top:4px">
+          + Registrar gasto
+        </button>
+      </div>
+
+      <div class="card">
+        <h3>📊 Distribución del mes</h3>
+        <div id="distribucion-content">
+          <div class="loading"><div class="spinner"></div>Calculando...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INGRESOS -->
+    <section class="page" id="page-ingresos">
+      <div class="page-title">Ingresos</div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi green"><div class="kpi-label">Total del mes</div><div class="kpi-val" id="ing-total">—</div></div>
+        <div class="kpi"><div class="kpi-label">Promedio mensual</div><div class="kpi-val" id="ing-prom">—</div></div>
+        <div class="kpi red"><div class="kpi-label">Mínimo histórico</div><div class="kpi-val" id="ing-min">—</div></div>
+        <div class="kpi green"><div class="kpi-label">Máximo histórico</div><div class="kpi-val" id="ing-max">—</div></div>
+      </div>
+
+      <div class="card">
+        <h3>+ Registrar ingreso</h3>
+        <div class="form-grid">
+          <div class="field"><label>Fecha</label><input type="date" id="ing-fecha"></div>
+          <div class="field"><label>Hora</label><input type="time" id="ing-hora"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Categoría</label>
+            <select id="ing-cat">
+              <option>Sueldo</option><option>Changa</option><option>Venta</option>
+              <option>Comisión</option><option>Extraordinario</option><option>Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Método de cobro</label>
+            <select id="ing-medio">
+              <option>Transferencia</option><option>Efectivo</option>
+              <option>Cheque</option><option>Mercado Pago</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Monto</label><input type="number" id="ing-monto" placeholder="$0" min="0" step="any"></div>
+          <div class="field"><label>Descripción</label><input type="text" id="ing-desc" placeholder="Ej: sueldo julio"></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Observaciones</label><input type="text" id="ing-obs" placeholder="Opcional"></div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarIngreso()" style="margin-top:6px">+ Agregar ingreso</button>
+      </div>
+
+      <div class="card">
+        <h3>📋 Ingresos del mes</h3>
+        <div id="lista-ingresos"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </section>
+
+    <!-- GASTOS -->
+    <section class="page" id="page-gastos">
+      <div class="page-title">Gastos diarios</div>
+
+      <div class="card">
+        <h3>+ Cargar gasto</h3>
+        <div class="form-grid">
+          <div class="field"><label>Fecha</label><input type="date" id="g-fecha"></div>
+          <div class="field"><label>Hora</label><input type="time" id="g-hora"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Categoría</label>
+            <select id="g-cat">
+              <option>Comida</option><option>Transporte</option><option>Salud</option><option>Servicios</option>
+              <option>Alquiler</option><option>Gimnasio</option><option>Internet</option><option>Combustible</option>
+              <option>Delivery</option><option>Salidas</option><option>Compras emocionales</option><option>Apps</option>
+              <option>Educación</option><option>Inversión</option><option>Capacitación</option><option>Otro</option>
+            </select>
+          </div>
+          <div class="field"><label>Subcategoría</label><input type="text" id="g-subcat" placeholder="Ej: almuerzo, taxi..."></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Monto</label><input type="number" id="g-monto" placeholder="$0" min="0" step="any"></div>
+          <div class="field">
+            <label>Método de pago</label>
+            <select id="g-medio">
+              <option>Efectivo</option><option>Débito</option><option>Crédito</option><option>Transferencia</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Descripción</label><input type="text" id="g-desc" placeholder="Ej: almuerzo en el trabajo"></div>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="g-tipo">
+              <option value="necesario">Necesario</option>
+              <option value="impulsivo">Impulsivo</option>
+              <option value="operativo">Operativo</option>
+              <option value="crecimiento">Crecimiento</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Observación</label><input type="text" id="g-obs" placeholder="Opcional"></div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarGasto()" style="margin-top:6px;width:100%">+ Registrar gasto</button>
+      </div>
+
+      <div class="card">
+        <h3>📋 Gastos del mes</h3>
+        <div id="lista-gastos"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </section>
+
+    <!-- GASTOS FIJOS -->
+    <section class="page" id="page-fijos">
+      <div class="page-title">Gastos fijos</div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi"><div class="kpi-label">Total mensual</div><div class="kpi-val" id="fijo-total">—</div></div>
+        <div class="kpi"><div class="kpi-label">% sobre ingresos</div><div class="kpi-val" id="fijo-pct">—</div></div>
+        <div class="kpi yellow"><div class="kpi-label">Próximo venc.</div><div class="kpi-val" id="fijo-prox">—</div></div>
+      </div>
+
+      <div class="card">
+        <h3>+ Agregar gasto fijo</h3>
+        <div class="form-grid">
+          <div class="field"><label>Nombre</label><input type="text" id="fijo-nombre" placeholder="Ej: Netflix, alquiler..."></div>
+          <div class="field"><label>Monto mensual</label><input type="number" id="fijo-monto" placeholder="$0" min="0"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Día de vencimiento</label><input type="number" id="fijo-dia" placeholder="1–31" min="1" max="31"></div>
+          <div class="field">
+            <label>Categoría</label>
+            <select id="fijo-cat">
+              <option>Alquiler</option><option>Internet</option><option>Gimnasio</option>
+              <option>Seguro</option><option>Cuota</option><option>Streaming</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarFijo()" style="margin-top:6px">+ Agregar fijo</button>
+      </div>
+
+      <div class="card">
+        <h3>📅 Gastos fijos activos</h3>
+        <div id="lista-fijos"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </section>
+
+    <!-- DEUDAS -->
+    <section class="page" id="page-deudas">
+      <div class="page-title">Deudas y vencimientos</div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi red"><div class="kpi-label">Total adeudado</div><div class="kpi-val" id="deuda-total">—</div></div>
+        <div class="kpi yellow"><div class="kpi-label">Vencen esta semana</div><div class="kpi-val" id="deuda-semana">—</div></div>
+        <div class="kpi red"><div class="kpi-label">Vencidas</div><div class="kpi-val" id="deuda-vencidas">—</div></div>
+      </div>
+
+      <div class="card">
+        <h3>+ Nueva deuda</h3>
+        <div class="form-grid">
+          <div class="field"><label>Descripción</label><input type="text" id="d-desc" placeholder="Ej: tarjeta Visa"></div>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="d-tipo">
+              <option value="tarjeta">Tarjeta</option><option value="prestamo">Préstamo</option>
+              <option value="cuota">Cuota</option><option value="impuesto">Impuesto</option>
+              <option value="servicio">Servicio</option><option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Monto</label><input type="number" id="d-monto" placeholder="$0" min="0"></div>
+          <div class="field"><label>Fecha de vencimiento</label><input type="date" id="d-fecha"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Prioridad</label>
+            <select id="d-prio">
+              <option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Estado</label>
+            <select id="d-estado">
+              <option value="pendiente">Pendiente</option><option value="pagado">Pagado</option><option value="vencido">Vencido</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarDeuda()" style="margin-top:6px">+ Agregar deuda</button>
+      </div>
+
+      <div class="card">
+        <h3>💳 Deudas activas</h3>
+        <div id="lista-deudas"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </section>
+
+    <!-- EQUILIBRIO -->
+    <section class="page" id="page-equilibrio">
+      <div class="page-title">Punto de equilibrio</div>
+      <div id="equilibrio-content"><div class="loading"><div class="spinner"></div>Calculando...</div></div>
+    </section>
+
+    <!-- AHORRO -->
+    <section class="page" id="page-ahorro">
+      <div class="page-title">Ahorro</div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi green"><div class="kpi-label">Capacidad de ahorro</div><div class="kpi-val" id="ahorro-cap">—</div></div>
+        <div class="kpi"><div class="kpi-label">Metas activas</div><div class="kpi-val" id="ahorro-metas">—</div></div>
+        <div class="kpi"><div class="kpi-label">Total en metas</div><div class="kpi-val" id="ahorro-total">—</div></div>
+      </div>
+
+      <div class="card">
+        <h3>+ Nueva meta de ahorro</h3>
+        <div class="form-grid">
+          <div class="field"><label>Nombre del objetivo</label><input type="text" id="meta-nombre" placeholder="Ej: fondo de emergencia, viaje..."></div>
+          <div class="field"><label>Monto objetivo</label><input type="number" id="meta-objetivo" placeholder="$0" min="0"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Ahorro inicial</label><input type="number" id="meta-inicial" placeholder="$0" min="0" value="0"></div>
+          <div class="field"><label>Emoji</label><input type="text" id="meta-emoji" placeholder="🎯" maxlength="2" value="🎯"></div>
+        </div>
+        <button class="btn btn-primary" onclick="guardarMeta()" style="margin-top:6px">+ Crear objetivo</button>
+      </div>
+
+      <div class="card">
+        <h3>🎯 Objetivos de ahorro</h3>
+        <div id="lista-metas"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </section>
+
+    <!-- ALERTAS -->
+    <section class="page" id="page-alertas">
+      <div class="page-title">Alertas inteligentes</div>
+      <div id="alertas-content"><div class="loading"><div class="spinner"></div>Analizando...</div></div>
+    </section>
+
+    <!-- COMPARATIVAS -->
+    <section class="page" id="page-comparativas">
+      <div class="page-title">Comparativas</div>
+
+      <div class="tab-row" id="comp-tabs">
+        <button class="active" onclick="switchCompTab(this,'mes')">Mes vs mes</button>
+        <button onclick="switchCompTab(this,'categorias')">Por categoría</button>
+        <button onclick="switchCompTab(this,'tipo')">Por tipo</button>
+      </div>
+
+      <div id="comp-mes">
+        <div class="card">
+          <h3>📅 Últimos 3 meses</h3>
+          <div id="comp-mes-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+        </div>
+      </div>
+
+      <div id="comp-categorias" style="display:none">
+        <div class="card">
+          <h3>📊 Gastos por categoría (mes actual)</h3>
+          <div id="comp-cat-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+        </div>
+      </div>
+
+      <div id="comp-tipo" style="display:none">
+        <div class="card">
+          <h3>📊 Gastos por tipo</h3>
+          <div id="comp-tipo-content"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="page" id="page-historial">
+      <div class="page-title">Historial de modificaciones</div>
+      <div class="card">
+        <div id="lista-historial"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <button class="mobile-nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span>Inicio</button>
+  <button class="mobile-nav-item" onclick="showPage('gastos')"><span class="icon">🧾</span>Gastos</button>
+  <button class="mobile-nav-item" onclick="showPage('ingresos')"><span class="icon">💰</span>Ingresos</button>
+  <button class="mobile-nav-item" onclick="showPage('deudas')"><span class="icon">💳</span>Deudas</button>
+  <button class="mobile-nav-item" onclick="showPage('alertas')"><span class="icon">🔔</span>Alertas</button>
+</nav>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
