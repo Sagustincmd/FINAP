@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinanzasApp — Ingresá</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    window.ENV_SUPABASE_URL = 'TU_SUPABASE_URL';
+    window.ENV_SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
+  </script>
+</head>
+<body class="auth-body">
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <rect width="40" height="40" rx="10" fill="#185FA5"/>
+      <path d="M12 28L20 12L28 28" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14.5 23H25.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span class="auth-logo-text">FinanzasApp</span>
+  </div>
+
+  <div class="tab-row" id="auth-tabs">
+    <button class="active" onclick="switchAuthTab('login')">Iniciar sesión</button>
+    <button onclick="switchAuthTab('register')">Registrarse</button>
+  </div>
+
+  <!-- LOGIN -->
+  <form id="form-login" onsubmit="handleLogin(event)">
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="tu@email.com" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" required autocomplete="current-password">
+    </div>
+    <div id="login-error" class="form-error" style="display:none"></div>
+    <button type="submit" class="btn-submit" id="login-btn">Ingresar</button>
+  </form>
+
+  <!-- REGISTRO -->
+  <form id="form-register" style="display:none" onsubmit="handleRegister(event)">
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="tu@email.com" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>Confirmar contraseña</label>
+      <input type="password" id="reg-pass2" placeholder="Repetí la contraseña" required autocomplete="new-password">
+    </div>
+    <div id="reg-error" class="form-error" style="display:none"></div>
+    <div id="reg-success" class="form-success" style="display:none"></div>
+    <button type="submit" class="btn-submit" id="reg-btn">Crear cuenta</button>
+  </form>
+</div>
+
+<script type="module">
+  import { supabase } from './js/supabase-client.js';
+
+  // Si ya tiene sesión, redirigir al app
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) window.location.href = '/app.html';
+  });
+
+  window.switchAuthTab = function(tab) {
+    document.getElementById('form-login').style.display    = tab === 'login'    ? 'block' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+    document.querySelectorAll('#auth-tabs button').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+  };
+
+  window.handleLogin = async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-error');
+    btn.textContent = 'Ingresando...';
+    btn.disabled = true;
+    err.style.display = 'none';
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email:    document.getElementById('login-email').value.trim(),
+      password: document.getElementById('login-pass').value,
+    });
+
+    if (error) {
+      err.textContent = error.message === 'Invalid login credentials'
+        ? 'Email o contraseña incorrectos.'
+        : error.message;
+      err.style.display = 'block';
+      btn.textContent = 'Ingresar';
+      btn.disabled = false;
+    } else {
+      window.location.href = '/app.html';
+    }
+  };
+
+  window.handleRegister = async function(e) {
+    e.preventDefault();
+    const btn  = document.getElementById('reg-btn');
+    const err  = document.getElementById('reg-error');
+    const succ = document.getElementById('reg-success');
+    err.style.display  = 'none';
+    succ.style.display = 'none';
+
+    const pass  = document.getElementById('reg-pass').value;
+    const pass2 = document.getElementById('reg-pass2').value;
+    if (pass !== pass2) {
+      err.textContent = 'Las contraseñas no coinciden.';
+      err.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Creando cuenta...';
+    btn.disabled = true;
+
+    const { error } = await supabase.auth.signUp({
+      email:    document.getElementById('reg-email').value.trim(),
+      password: pass,
+    });
+
+    if (error) {
+      err.textContent = error.message;
+      err.style.display = 'block';
+      btn.textContent = 'Crear cuenta';
+      btn.disabled = false;
+    } else {
+      succ.textContent = '¡Cuenta creada! Revisá tu email para confirmar y luego iniciá sesión.';
+      succ.style.display = 'block';
+      btn.textContent = 'Crear cuenta';
+      btn.disabled = false;
+    }
+  };
+</script>
+</body>
+</html>
